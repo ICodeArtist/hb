@@ -110,6 +110,7 @@ function __pgAutoLoad($className){
 spl_autoload_register('__pgAutoLoad');
 
 //base controller
+header("Access-Control-Allow-Origin: *");
 class grace{
 	public    $gets;
 	public    $tableName  = null;
