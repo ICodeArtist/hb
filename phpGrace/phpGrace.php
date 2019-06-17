@@ -111,6 +111,8 @@ spl_autoload_register('__pgAutoLoad');
 
 //base controller
 header("Access-Control-Allow-Origin: *");
+header('Access-Control-Allow-Methods:OPTIONS,GET, POST'); // 允许option，get，post请求
+header('Access-Control-Allow-Headers:X-Requested-With,content-type,access-token,Access-Token');
 class grace{
 	public    $gets;
 	public    $tableName  = null;
@@ -123,7 +125,8 @@ class grace{
 	protected $cachePre;
 	protected $cacheName;
 	
-	public function __construct(){}
+	public function __construct(){
+	}
 	
 	public function __init(){
 		$this->templateDir = PG_PATH.'/'.PG_VIEW.'/';
@@ -158,8 +161,8 @@ class grace{
 		pgSetCookie('phpGraceLang', $langType);
 	}
 	
-	protected function json($data, $type = 'ok'){
-		pgExit(json_encode(array('status' => $type, 'data' => $data)));
+	protected function json($data, $type = 'ok', $msg=''){
+		pgExit(json_encode(array('status' => $type, 'data' => $data, 'msg' => $msg)));
 	}
 	
 	protected function dataList($everyPagerNum = 20, $fields = '*'){
