@@ -143,7 +143,21 @@ class db{
 			return array($this->pretreatment->fetchAll(\PDO::FETCH_ASSOC), $pager);
 		}
 	}
-	
+	public function dcxfetchAll($fields = null){
+		$preArray    = $this->prepare($fields, false);		
+		$this->sql   = $preArray[0];
+		$mode         = '/^select .* from (.*)$/Uis';
+		preg_match($mode, $this->sql, $arr_preg);
+		$sql          = 'select count(*) as total from '.$arr_preg['1'];
+		if(strpos($sql, 'group by ')){$sql = 'select count(*) as total from ('.$sql.') as witCountTable;';}
+		$pretreatment = $this->pdo->prepare($sql);
+		$pretreatment->execute($preArray[1]);
+		$arrTotal     = $pretreatment->fetch(\PDO::FETCH_ASSOC);
+		$this->sql .= $this->getLimit().';';
+		$this->pretreatment  = $this->pdo->prepare($this->sql);
+		$this->pretreatment->execute($preArray[1]);
+		return array('data'=>$this->pretreatment->fetchAll(\PDO::FETCH_ASSOC), 'totalCount'=>(int)$arrTotal['total']);
+	}
 	public function prepare($fields, $limit = true){
 		$exeArray = array();
     	$join = $this->getJoin();

@@ -3,7 +3,7 @@
  * @Author: daichengxiang 
  * @Date: 2019-04-24 09:47:47 
  * @Last Modified by: daichengxiang
- * @Last Modified time: 2019-06-11 17:17:18
+ * @Last Modified time: 2019-06-20 17:02:50
  */
 
 class indexController extends grace{
@@ -23,28 +23,51 @@ class indexController extends grace{
 			$query .= " and areaid=?";
 			$queryarr[] = $_GET['areaid'];
 		}
+		if(isset($_GET['hyid']) && $_GET['hyid']>0){
+			$query .= " and hyid=?";
+			$queryarr[] = $_GET['hyid'];
+		}
 		$data = $db->where($query,$queryarr)
-		->join('as c left join area as a on c.areaid=a.id')
-		->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])->fetchAll('c.*,a.name as area');
-		$res['data'] = $data;
-		// $res['pageSize'] = (int)$_GET['pageSize'];
-		$res['pageNo'] = (int)$_GET['pageNo'];
-		$res['totalCount'] = (int)count($db->where($query,$queryarr)->join('as c left join area as a on c.areaid=a.id')->fetchAll('c.*,a.name as area'));
-		// $res['totalPage'] = ceil($res['totalCount']/$_GET['pageSize']);
-		$this->json($res);
+		->join('as c left join area as a on c.areaid=a.id left join hy as h on c.hyid=h.id')->order('id asc')
+		->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])->dcxfetchAll('c.*,a.name as area,h.name as hyname');
+		$data['pageNo'] = (int)$_GET['pageNo'];
+		$this->json($data);
 	}
 	//地区
 	public function areas(){
 		$data = db('area')->fetchAll();
 		$this->json($data);
 	}
-
+	//行业
+	public function hys(){
+		$data = db('hy')->fetchAll();
+		$this->json($data);
+	}
 	//公司
 	public function companys(){
 		$data = db('company')->fetchAll();
 		$this->json($data);
 	}
-	//
+	//网关
+	public function wgs(){
+		$data = db('wg')->fetchAll();
+		$this->json($data);
+	}
+	//公司网关二级联动
+	public function companysandwgs(){
+		$data = db('company')->fetchAll('id as value,name as label');
+		foreach ($data as $key => $value) {
+			$data[$key]['children'] = [];
+			$children = db('wg')->where('companyid=?',array($value['value']))->fetchAll('id as value,name as label');
+			if(empty($children)){
+				$data[$key]['disabled'] = true;
+			}else{
+				$data[$key]['children'] = $children;
+			}
+		}
+		$this->json($data);
+	}
+
 	public function addCompany(){
 		if($_SERVER['REQUEST_METHOD'] == 'OPTIONS'){
 
@@ -62,69 +85,24 @@ class indexController extends grace{
 
 	public function delCompany(){
 		db('company')->where('id = ?', array($_GET['id']))->delete();
+		db('wg')->where('companyid=?',array($_GET['id']))->delete();
+		db('scss')->where('companyid=?',array($_GET['id']))->delete();
+		db('zlss')->where('companyid=?',array($_GET['id']))->delete();
 		$this->json('');
 	}
-
-
-	public function equiplist(){
-		$db = db('equip');
-		$query = '1=?';
-		$queryarr[] = '1';
-		// if(isset($_GET['name']) && $_GET['name']){
-		// 	$query .= " and c.name like '%".$_GET['name']."%'";
-		// }
-		// if(isset($_GET['areaid']) && $_GET['areaid']>0){
-		// 	$query .= " and areaid=?";
-		// 	$queryarr[] = $_GET['areaid'];
-		// }
-		$data = $db->where($query,$queryarr)
-		->join('as e left join company as c on e.companyid=c.id')
-		->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])->fetchAll('e.*,c.name as cname');
-		$res['data'] = $data;
-		$res['pageNo'] = (int)$_GET['pageNo'];
-		$res['totalCount'] = (int)count($db->where($query,$queryarr)->join('as e left join company as c on e.companyid=c.id')->fetchAll('e.*,c.name as cname'));
-		$this->json($res);
-	}
-	public function addEquip(){
-		if($_SERVER['REQUEST_METHOD'] == 'OPTIONS'){
-
-		}else{
-			$eqid = $_POST['id'];
-			unset($_POST['id']);
-			if($eqid>0){
-				$companyid = db('equip')->where('id=?',array($eqid))->update($_POST);
-			}else{
-				$companyid = db('equip')->add($_POST);
-			}
-			$companyid?$this->json(''):$this->json('','-1','失败');
-		}
-	}
-	public function delEquip(){
-		db('company')->where('id = ?', array($_GET['id']))->delete();
+	public function delWg(){
+		db('wg')->where('id=?',array($_GET['id']))->delete();
+		db('scss')->where('wgid=?',array($_GET['id']))->delete();
+		db('zlss')->where('wgid=?',array($_GET['id']))->delete();
 		$this->json('');
 	}
-	public function realtimedata(){
-		$query = '1=?';
-		$queryarr[] = '1';
-		if(isset($_GET['cname']) && $_GET['cname']){
-			$query .= " and c.name like '%".$_GET['cname']."%'";
-		}
-		if(isset($_GET['begintime']) && $_GET['begintime'] && isset($_GET['endtime']) && $_GET['endtime']){
-			$query .=" and m.createTime>? and m.createTime<?";
-			$queryarr[] = $_GET['begintime'];
-			$queryarr[] = $_GET['endtime'];
-		}
-		$data = db('machine')->where($query,$queryarr)
-		->join('as m left join equip as eq on eq.id=m.equipid left join company as c on c.id=eq.companyid')
-		->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])->fetchAll('m.*,eq.name as eqname,c.name as cname');
-		$errortime = 2*86400;
-		foreach ($data as $key => $value) {
-			(strtotime($value['createTime'])+$errortime)<time()?$data[$key]['status'] = '0': $data[$key]['status'] = '1';
-		}
-		$res['data'] = $data;
-		$res['pageNo'] = (int)$_GET['pageNo'];
-		$res['totalCount'] = (int)count(db('machine')->where($query,$queryarr)->join('as m left join equip as eq on eq.id=m.equipid left join company as c on c.id=eq.companyid')->fetchAll('m.*,eq.name as eqname,c.name as cname'));
-		$this->json($res);
+	public function delScss(){
+		db('scss')->where('id=?',array($_GET['id']))->delete();
+		$this->json('');
+	}
+	public function delZlss(){
+		db('zlss')->where('id=?',array($_GET['id']))->delete();
+		$this->json('');
 	}
 	public function logdata(){
 		if(isset($_GET['machineid']) && $_GET['machineid']){
@@ -169,5 +147,156 @@ class indexController extends grace{
 			$companys[$k1]['children'] = array_values($equips);
 		}
 		$this->json($companys);
+	}
+
+	public function adminlist(){
+		$data = db('admin')->where('deleted=?',array(0))->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])->dcxfetchAll();
+		$data['pageNo'] = (int)$_GET['pageNo'];
+		$this->json($data);
+	}
+
+	public function rolelist(){
+		$data = db('role')->where('deleted=?',array(0))->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])->fetchAll();
+		$res['data'] = $data;
+		$res['pageNo'] = (int)$_GET['pageNo'];
+		$res['totalCount'] = (int)count(db('role')->where('deleted=?',array(0))->fetchAll());
+		$this->json($res);
+	}
+
+	public function ssdata(){
+		$query = '1=?';
+		$queryarr[] = '1';
+		if(isset($_GET['cname']) && $_GET['cname']){
+			$query .= " and c.name like '%".$_GET['cname']."%'";
+		}
+		if(isset($_GET['areaid']) && $_GET['areaid']>0){
+			$query .= " and c.areaid=?";
+			$queryarr[] = $_GET['areaid'];
+		}
+		if(isset($_GET['hyid']) && $_GET['hyid']>0){
+			$query .= " and c.hyid=?";
+			$queryarr[] = $_GET['hyid'];
+		}
+		if(isset($_GET['cstatus']) && $_GET['cstatus']>0){
+			$query .= " and c.status=?";
+			$queryarr[] = $_GET['cstatus'];
+		}
+		if(isset($_GET['status']) && $_GET['status']>0){
+			$query .= " and s.status=?";
+			$queryarr[] = $_GET['status'];
+		}
+		$data = db('scss')->join('as s left join company as c on s.companyid=c.id 
+		left join wg as w on w.id=s.wgid 
+		left join area as a on a.id=c.areaid 
+		left join hy as h on h.id=c.hyid')
+		->where($query,$queryarr)->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])
+		->dcxfetchAll('s.*,
+		c.name as cname,c.remark,c.status as cstatus,
+		h.name as hname,
+		w.name as wname,
+		a.name as aname');
+		$db = db('zlss');
+		foreach ($data['data'] as $key => $value) {
+			for ($i=1; $i <5 ; $i++) {
+				$zval = $db->where('companyid=? and wgid=? and no=?',array($value['companyid'],$value['wgid'],$i))->fetch('val');
+				$data['data'][$key]['zlss'.$i] = $zval['val'];
+			}
+		}
+		$data['pageNo'] = (int)$_GET['pageNo'];
+		$this->json($data);
+	}
+
+	public function wglist(){
+		$query = '1=?';
+		$queryarr[] = '1';
+		if(isset($_GET['cname']) && $_GET['cname']){
+			$query .= " and c.name like '%".$_GET['cname']."%'";
+		}
+		$data = db('wg')->join('as w left join company as c on c.id=w.companyid')->where($query,$queryarr)->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])
+		->dcxfetchAll('w.*,c.name as cname');
+		$data['pageNo'] = (int)$_GET['pageNo'];
+		$this->json($data);
+	}
+
+	public function addWg(){
+		if($_SERVER['REQUEST_METHOD'] == 'OPTIONS'){
+
+		}else{
+			$wgid = $_POST['id'];
+			unset($_POST['id']);
+			if($wgid>0){
+				$wgida = db('wg')->where('id=?',array($wgid))->update($_POST);
+			}else{
+				$wgida = db('wg')->add($_POST);
+			}
+			$wgida?$this->json(''):$this->json('','-1','失败');
+		}
+	}
+
+	public function scsslist(){
+		$query = '1=?';
+		$queryarr[] = '1';
+		if(isset($_GET['cname']) && $_GET['cname']){
+			$query .= " and c.name like '%".$_GET['cname']."%'";
+		}
+		$data = db('scss')->join('as s left join company as c on c.id=s.companyid 
+		left join wg as w on w.id=s.wgid')
+		->where($query,$queryarr)->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])
+		->dcxfetchAll('s.*,w.sn as wsn,c.name as cname');
+		$data['pageNo'] = (int)$_GET['pageNo'];
+		$this->json($data);
+	}
+
+	public function addScss(){
+		if($_SERVER['REQUEST_METHOD'] == 'OPTIONS'){
+
+		}else{
+			$Scssid = $_POST['id'];
+			unset($_POST['id']);
+			$_POST['companyid'] = $_POST['cpwg'][0];
+			$_POST['wgid'] = $_POST['cpwg'][1];
+			unset($_POST['cpwg']);
+			if($Scssid>0){
+				$Scssida = db('scss')->where('id=?',array($Scssid))->update($_POST);
+			}else{
+				$Scssida = db('scss')->add($_POST);
+			}
+			$Scssida?$this->json(''):$this->json('','-1','失败');
+		}
+	}
+
+	public function zlsslist(){
+		$query = '1=?';
+		$queryarr[] = '1';
+		if(isset($_GET['cname']) && $_GET['cname']){
+			$query .= " and c.name like '%".$_GET['cname']."%'";
+		}
+		$data = db('zlss')->join('as z left join company as c on c.id=z.companyid 
+		left join wg as w on w.id=z.wgid')
+		->where($query,$queryarr)->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])
+		->dcxfetchAll('z.*,w.sn as wsn,c.name as cname');
+		$data['pageNo'] = (int)$_GET['pageNo'];
+		$this->json($data);
+	}
+
+	public function addZlss(){
+		if($_SERVER['REQUEST_METHOD'] == 'OPTIONS'){
+
+		}else{
+			$zlssid = $_POST['id'];
+			unset($_POST['id']);
+			$_POST['companyid'] = $_POST['cpwg'][0];
+			$_POST['wgid'] = $_POST['cpwg'][1];
+			unset($_POST['cpwg']);
+			if($zlssid>0){
+				$zlssida = db('zlss')->where('id=?',array($zlssid))->update($_POST);
+			}else{
+				$data = db('zlss')->where('companyid=? and wgid=? and no=?',array($_POST['companyid'],$_POST['wgid'],$_POST['no']))->fetch();
+				if(!empty($data))
+					$this->json('','-1','不能重复');
+				$zlssida = db('zlss')->add($_POST);
+			}
+			$zlssida?$this->json(''):$this->json('','-1','失败');
+		}
 	}
 }
