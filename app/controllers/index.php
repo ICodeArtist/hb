@@ -104,27 +104,21 @@ class indexController extends grace{
 		db('zlss')->where('id=?',array($_GET['id']))->delete();
 		$this->json('');
 	}
+	//历史数据
 	public function logdata(){
-		if(isset($_GET['machineid']) && $_GET['machineid']){
-			$query = 'machineid=?';
-			$queryarr[] = explode('_',$_GET['machineid'])[1];
-			$data = db('engdata')->where($query,$queryarr)
-			->join('as e left join machine as m on m.id=e.machineid left join equip as eq on eq.id=m.equipid left join company as c on c.id=eq.companyid')
-			->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])->fetchAll('e.*,m.name,eq.name as eqname,c.name as cname');
-			$errortime = 2*86400;
-			foreach ($data as $key => $value) {
-				(strtotime($value['createTime'])+$errortime)<time()?$data[$key]['status'] = '0': $data[$key]['status'] = '1';
-			}
-			$totalCount = (int)count(db('engdata')->where($query,$queryarr)->join('as e left join machine as m on m.id=e.machineid left join equip as eq on eq.id=m.equipid left join company as c on c.id=eq.companyid')->fetchAll('e.*,m.name,eq.name as eqname,c.name as cname'));
-		}else{
-			$data = [];
-			$totalCount = 0;
+		$query = '1=?';
+		$queryarr[] = '1';
+		if(isset($_GET['companyname']) && $_GET['companyname']){
+			$query .= " and companyname like '%".$_GET['companyname']."%'";
 		}
-		
-		$res['data'] = $data;
-		$res['pageNo'] = (int)$_GET['pageNo'];
-		$res['totalCount'] = $totalCount;
-		$this->json($res);
+		if(isset($_GET['status']) && $_GET['status']>0){
+			$query .= " and status=?";
+			$queryarr[] = $_GET['status'];
+		}
+		$data = db('history201906')->where($query,$queryarr)->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])
+		->dcxfetchAll();
+		$data['pageNo'] = (int)$_GET['pageNo'];
+		$this->json($data);
 	}
 	public function orgTree(){
 		$companys = db('company')->fetchAll('id,name as title');
@@ -164,6 +158,13 @@ class indexController extends grace{
 	}
 
 	public function ssdata(){
+		$pageNo = $_GET['pageNo'];
+		$pageSize = $_GET['pageSize'];
+		$data = $this->getssdata($pageNo,$pageSize);
+		$this->json($data);
+	}
+	 
+	public function getssdata($pageNo,$pageSize){
 		$query = '1=?';
 		$queryarr[] = '1';
 		if(isset($_GET['cname']) && $_GET['cname']){
@@ -189,23 +190,23 @@ class indexController extends grace{
 		left join wg as w on w.id=s.wgid 
 		left join area as a on a.id=c.areaid 
 		left join hy as h on h.id=c.hyid')
-		->where($query,$queryarr)->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])
+		->where($query,$queryarr)->limit(($pageNo-1)*$pageSize,$pageSize)
 		->dcxfetchAll('s.*,
 		c.name as cname,c.remark,c.status as cstatus,
 		h.name as hname,
-		w.name as wname,
+		w.name as wname,w.sn as wsn,
 		a.name as aname');
 		$db = db('zlss');
 		foreach ($data['data'] as $key => $value) {
 			for ($i=1; $i <5 ; $i++) {
-				$zval = $db->where('companyid=? and wgid=? and no=?',array($value['companyid'],$value['wgid'],$i))->fetch('val');
+				$zval = $db->where('companyid=? and wgid=? and no=?',array($value['companyid'],$value['wgid'],$i))->fetch('val,updateTime');
 				$data['data'][$key]['zlss'.$i] = $zval['val'];
+				$data['data'][$key]['zlss'.$i.'t'] = $zval['updateTime'];
 			}
 		}
 		$data['pageNo'] = (int)$_GET['pageNo'];
-		$this->json($data);
+		return $data;
 	}
-
 	public function wglist(){
 		$query = '1=?';
 		$queryarr[] = '1';
@@ -298,5 +299,73 @@ class indexController extends grace{
 			}
 			$zlssida?$this->json(''):$this->json('','-1','失败');
 		}
+	}
+	/*=================================*/
+	public function savelogdata(){
+		$ssdata = $this->getssdata(1,1);
+		$totalCount = $ssdata['totalCount'];
+		$t = Date('Ym',time());
+		$data = $this->getssdata(1,$totalCount)['data'];
+		$db = db('history'.$t);
+		foreach ($data as $v) {
+			$addData = array(
+				'companyname'=>$v['cname'],
+				'scssname'=>$v['name'],
+				'scsssn'=>$v['sn'],
+				'status'=>$v['status'],
+				'wgsn'=>$v['wsn'],
+				'wgname'=>$v['wname'],
+				'logtime'=>$v['updateTime'],
+				'scssval'=>$v['val'],
+				'zlss1'=>$v['zlss1'],
+				'zlss1t'=>$v['zlss1t'],
+				'zlss2'=>$v['zlss2'],
+				'zlss2t'=>$v['zlss2t'],
+				'zlss3'=>$v['zlss3'],
+				'zlss3t'=>$v['zlss3t'],
+				'zlss4'=>$v['zlss4'],
+				'zlss4t'=>$v['zlss4t'],
+				'zlss5'=>'',
+				'zlss5t'=>'',
+				'zlss6'=>'',
+				'zlss6t'=>'',
+				'zlss7'=>'',
+				'zlss7t'=>'',
+				'bj'=>0,
+				'remark'=>$v['remark']
+			);
+			$db->add($addData);
+		}
+		$this->json('');
+	}
+	//时均值
+	public function savehourdata(){
+		$t = time();
+		$ym = Date('Ym',$t);
+		$h = Date('Y-m-d h',$t);//当前时间整点
+		$hl = Date('Y-m-d h',$t-3600);//前一小时整点
+		$data = db('history'.$ym)->where('create_time>=? and create_time<?',array($hl,$h))->fetchAll();
+		$hourdb = db('everyhour'.$ym);
+		foreach ($data as $key => $value) {
+			unset($data[$key]['id']);
+			unset($data[$key]['create_time']);
+			$hourdb->add($data[$key]);
+		}
+		$this->json($data);
+	}
+	//日均值
+	public function savedaydata(){
+		$t = time();
+		$ym = Date('Ym',$t);
+		$d = Date('Y-m-d',$t)." 00:00:00";//当前时间整日
+		$dl = Date('Y-m-d',$t-86400)." 00:00:00";//前一天
+		$data = db('everyhour'.$ym)->where('create_time>=? and create_time<?',array($dl,$d))->fetchAll();
+		$daydb = db('everyday'.$ym);
+		foreach ($data as $key => $value) {
+			unset($data[$key]['id']);
+			unset($data[$key]['create_time']);
+			$daydb->add($data[$key]);
+		}
+		$this->json($data);
 	}
 }
