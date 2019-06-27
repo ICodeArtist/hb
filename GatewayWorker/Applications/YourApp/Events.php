@@ -21,6 +21,7 @@
 
 use \GatewayWorker\Lib\Gateway;
 require_once 'Connection.php';
+
 /**
  * 主逻辑
  * 主要是处理 onConnect onMessage onClose 三个方法
@@ -56,8 +57,11 @@ class Events
     */
    public static function onMessage($client_id, $message)
    {
-       $data = self::$db->select('name,age')->from('test')->where('id = :id')->bindValues(array('id' => 1))->query();
-       return Gateway::sendToAll(var_export($data, true));
+    // $r = file_put_contents('tcpt.text',$message,FILE_APPEND);
+    // Gateway::sendToAll($r);
+    //    $data = self::$db->select('name')->from('hy')->where('id = :id')->bindValues(array('id' => 1))->query();
+    //    return Gateway::sendToAll(var_export($data, true));
+       
    }
    
    /**
