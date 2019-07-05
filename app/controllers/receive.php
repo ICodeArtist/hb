@@ -9,6 +9,7 @@ require_once 'Gateway.php';
 use GatewayClient\Gateway;
 class receiveController extends grace{
     public function testTCP(){
-        Gateway::sendToAll("testTCP\r\n");
+        $r = Gateway::sendToAll("testTCP\r\n");
+        $this->json($r);
     }
 }

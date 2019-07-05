@@ -45,7 +45,7 @@ class Events
         // 向当前client_id发送数据 
         Gateway::sendToClient($client_id, "Hello $client_id\r\n");
         // 向所有人发送
-        Gateway::sendToAll("$client_id login\r\n");
+        Gateway::sendToAll("$client_id login IP:".$_SERVER['REMOTE_ADDR']."\r\n");
 
         self::$db =new \Workerman\MySQL\Connection('localhost', '3306', 'hbsql', 'n7yJkdCaz3ssFS87', 'hbsql');
     }
@@ -57,11 +57,10 @@ class Events
     */
    public static function onMessage($client_id, $message)
    {
-    // $r = file_put_contents('tcpt.text',$message,FILE_APPEND);
+    $r = file_put_contents('tcpt.text',$message,FILE_APPEND);
     // Gateway::sendToAll($r);
     //    $data = self::$db->select('name')->from('hy')->where('id = :id')->bindValues(array('id' => 1))->query();
     //    return Gateway::sendToAll(var_export($data, true));
-       
    }
    
    /**
