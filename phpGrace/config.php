@@ -14,7 +14,9 @@ return array(
 	'allowCacheType'     => array('file', 'memcache', 'redis'),
 	//缓存设置
 	'cache'             => array(
-		'type'          => 'file',
-		'pre'           => 'grace'
+		'type'          => 'redis',
+		'host'          => '127.0.0.1', //主机地址
+		'port'          => '6379',     //端口
+		'pre'           => 'grace_'    //缓存变量前缀
 	)
 );
