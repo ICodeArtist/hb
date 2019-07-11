@@ -301,6 +301,11 @@ class indexController extends grace{
 		}
 	}
 	/*=================================*/
+	//在中旭阿里云上做的定时任务
+	/**
+	 * 每个15分钟，把即时数据表中的数据，保存到当前月的数据库中
+	 * 按月建表
+	 */
 	public function savelogdata(){
 		$ssdata = $this->getssdata(1,1);
 		$totalCount = $ssdata['totalCount'];
@@ -338,7 +343,11 @@ class indexController extends grace{
 		}
 		$this->json('');
 	}
-	//时均值
+	/**
+	 * 时均值
+	 * 每隔一小时，把当前月历史数据表中的数据，根据当前时间整点前一小时，保存到当前月的时均值表中
+	 * 按月建表
+	 */
 	public function savehourdata(){
 		$t = time();
 		$ym = Date('Ym',$t);
@@ -353,7 +362,11 @@ class indexController extends grace{
 		}
 		$this->json($data);
 	}
-	//日均值
+	/**
+	 * 日均值
+	 * 每天凌晨0点15分，把当前月时均值数据表中的数据，根据当前时间前一天，保存到当前月的日均值表中
+	 * 按月建表
+	 */
 	public function savedaydata(){
 		$t = time();
 		$ym = Date('Ym',$t);
