@@ -53,10 +53,10 @@ class receiveController extends grace{
                 $data5_1 = explode(',', $data5[$i]);
                 $Rtd = explode('=', $data5_1[0]);
                 $Flag = explode('=', $data5_1[1]);
-                $data6[$i-1]['no'] = substr($Rtd[0] , 6 , 2);
-                $data6[$i-1]['yz'] = substr($Rtd[0] , 8 , 2);
-                $data6[$i-1]['Rtd'] = $Rtd[1];
-                $data6[$i-1]['Flag'] = $Flag[1];
+                $data6[$i-1]['no'] = substr($Rtd[0] , 6 , 2); //zlss编号
+                $data6[$i-1]['yz'] = substr($Rtd[0] , 8 , 2); //01-A相电流 02-B相电流 03-C相电流 04-单相电流 05-总有功功率 06-总无功功率 07-总有功电量 08-总无功电量 09-功率因数
+                $data6[$i-1]['Rtd'] = $Rtd[1];                //zlss val
+                $data6[$i-1]['Flag'] = $Flag[1];              //N-合格 J-无效
             }
             print_r($data6);
         }else{
