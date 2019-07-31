@@ -96,11 +96,11 @@ class indexController extends grace{
 		db('zlss')->where('wgid=?',array($_GET['id']))->delete();
 		$this->json('');
 	}
-	public function delScss(){
-		db('scss')->where('id=?',array($_GET['id']))->delete();
+	public function delBeltline(){
+		db('beltline')->where('id=?',array($_GET['id']))->delete();
 		$this->json('');
 	}
-	public function delZlss(){
+	public function delFacility(){
 		db('zlss')->where('id=?',array($_GET['id']))->delete();
 		$this->json('');
 	}
@@ -178,30 +178,29 @@ class indexController extends grace{
 			$query .= " and c.hyid=?";
 			$queryarr[] = $_GET['hyid'];
 		}
-		if(isset($_GET['cstatus']) && $_GET['cstatus']>0){
-			$query .= " and c.status=?";
-			$queryarr[] = $_GET['cstatus'];
+		if(isset($_GET['wstatus']) && $_GET['wstatus']>0){
+			$query .= " and b.wstatus=?";
+			$queryarr[] = $_GET['wstatus'];
 		}
 		if(isset($_GET['status']) && $_GET['status']>0){
-			$query .= " and s.status=?";
+			$query .= " and b.status=?";
 			$queryarr[] = $_GET['status'];
 		}
-		$data = db('scss')->join('as s left join company as c on s.companyid=c.id 
-		left join wg as w on w.id=s.wgid 
+		$data = db('beltline')->join('as b left join company as c on b.companyid=c.id 
+		left join wg as w on w.id=b.wgid 
 		left join area as a on a.id=c.areaid 
 		left join hy as h on h.id=c.hyid')
 		->where($query,$queryarr)->limit(($pageNo-1)*$pageSize,$pageSize)
-		->dcxfetchAll('s.*,
-		c.name as cname,c.remark,c.status as cstatus,
+		->dcxfetchAll('b.*,
+		c.name as cname,c.remark,
 		h.name as hname,
 		w.name as wname,w.sn as wsn,
 		a.name as aname');
-		$db = db('zlss');
+		$db = db('facility');
 		foreach ($data['data'] as $key => $value) {
-			for ($i=1; $i <5 ; $i++) {
-				$zval = $db->where('companyid=? and wgid=? and no=?',array($value['companyid'],$value['wgid'],$i))->fetch('val,updateTime');
-				$data['data'][$key]['zlss'.$i] = $zval['val'];
-				$data['data'][$key]['zlss'.$i.'t'] = $zval['updateTime'];
+			$f = $db->where('companyid=? and wgid=?',array($value['companyid'],$value['wgid']))->fetchAll();
+			for ($i=1; $i <=count($f); $i++) {
+				$data['data'][$key]['facility'.$i] = $f[$i-1]['val1'];
 			}
 		}
 		$data['pageNo'] = (int)$_GET['pageNo'];
@@ -234,13 +233,13 @@ class indexController extends grace{
 		}
 	}
 
-	public function scsslist(){
+	public function beltlinelist(){
 		$query = '1=?';
 		$queryarr[] = '1';
 		if(isset($_GET['cname']) && $_GET['cname']){
 			$query .= " and c.name like '%".$_GET['cname']."%'";
 		}
-		$data = db('scss')->join('as s left join company as c on c.id=s.companyid 
+		$data = db('beltline')->join('as s left join company as c on c.id=s.companyid 
 		left join wg as w on w.id=s.wgid')
 		->where($query,$queryarr)->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])
 		->dcxfetchAll('s.*,w.sn as wsn,c.name as cname');
@@ -248,31 +247,27 @@ class indexController extends grace{
 		$this->json($data);
 	}
 
-	public function addScss(){
-		if($_SERVER['REQUEST_METHOD'] == 'OPTIONS'){
-
+	public function addBeltline(){
+		$beltlineid = $_POST['id'];
+		unset($_POST['id']);
+		$_POST['companyid'] = $_POST['cpwg'][0];
+		$_POST['wgid'] = $_POST['cpwg'][1];
+		unset($_POST['cpwg']);
+		if($beltlineid>0){
+			$beltlineida = db('beltline')->where('id=?',array($beltlineid))->update($_POST);
 		}else{
-			$Scssid = $_POST['id'];
-			unset($_POST['id']);
-			$_POST['companyid'] = $_POST['cpwg'][0];
-			$_POST['wgid'] = $_POST['cpwg'][1];
-			unset($_POST['cpwg']);
-			if($Scssid>0){
-				$Scssida = db('scss')->where('id=?',array($Scssid))->update($_POST);
-			}else{
-				$Scssida = db('scss')->add($_POST);
-			}
-			$Scssida?$this->json(''):$this->json('','-1','失败');
+			$beltlineida = db('beltline')->add($_POST);
 		}
+		$beltlineida?$this->json(''):$this->json('','-1','失败');
 	}
 
-	public function zlsslist(){
+	public function facilitylist(){
 		$query = '1=?';
 		$queryarr[] = '1';
 		if(isset($_GET['cname']) && $_GET['cname']){
 			$query .= " and c.name like '%".$_GET['cname']."%'";
 		}
-		$data = db('zlss')->join('as z left join company as c on c.id=z.companyid 
+		$data = db('facility')->join('as z left join company as c on c.id=z.companyid 
 		left join wg as w on w.id=z.wgid')
 		->where($query,$queryarr)->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])
 		->dcxfetchAll('z.*,w.sn as wsn,c.name as cname');
@@ -280,25 +275,21 @@ class indexController extends grace{
 		$this->json($data);
 	}
 
-	public function addZlss(){
-		if($_SERVER['REQUEST_METHOD'] == 'OPTIONS'){
-
+	public function addFacility(){
+		$zlssid = $_POST['id'];
+		unset($_POST['id']);
+		$_POST['companyid'] = $_POST['cpwg'][0];
+		$_POST['wgid'] = $_POST['cpwg'][1];
+		unset($_POST['cpwg']);
+		if($zlssid>0){
+			$zlssida = db('facility')->where('id=?',array($zlssid))->update($_POST);
 		}else{
-			$zlssid = $_POST['id'];
-			unset($_POST['id']);
-			$_POST['companyid'] = $_POST['cpwg'][0];
-			$_POST['wgid'] = $_POST['cpwg'][1];
-			unset($_POST['cpwg']);
-			if($zlssid>0){
-				$zlssida = db('zlss')->where('id=?',array($zlssid))->update($_POST);
-			}else{
-				$data = db('zlss')->where('companyid=? and wgid=? and no=?',array($_POST['companyid'],$_POST['wgid'],$_POST['no']))->fetch();
-				if(!empty($data))
-					$this->json('','-1','不能重复');
-				$zlssida = db('zlss')->add($_POST);
-			}
-			$zlssida?$this->json(''):$this->json('','-1','失败');
+			$data = db('facility')->where('companyid=? and wgid=? and no=?',array($_POST['companyid'],$_POST['wgid'],$_POST['no']))->fetch();
+			if(!empty($data))
+				$this->json('','-1','不能重复');
+			$zlssida = db('facility')->add($_POST);
 		}
+		$zlssida?$this->json(''):$this->json('','-1','失败');
 	}
 	/*=================================*/
 	//在中旭阿里云上做的定时任务
