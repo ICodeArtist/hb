@@ -86,14 +86,14 @@ class indexController extends grace{
 	public function delCompany(){
 		db('company')->where('id = ?', array($_GET['id']))->delete();
 		db('wg')->where('companyid=?',array($_GET['id']))->delete();
-		db('scss')->where('companyid=?',array($_GET['id']))->delete();
-		db('zlss')->where('companyid=?',array($_GET['id']))->delete();
+		db('beltline')->where('companyid=?',array($_GET['id']))->delete();
+		db('facility')->where('companyid=?',array($_GET['id']))->delete();
 		$this->json('');
 	}
 	public function delWg(){
 		db('wg')->where('id=?',array($_GET['id']))->delete();
-		db('scss')->where('wgid=?',array($_GET['id']))->delete();
-		db('zlss')->where('wgid=?',array($_GET['id']))->delete();
+		db('beltline')->where('wgid=?',array($_GET['id']))->delete();
+		db('facility')->where('wgid=?',array($_GET['id']))->delete();
 		$this->json('');
 	}
 	public function delBeltline(){
@@ -101,7 +101,7 @@ class indexController extends grace{
 		$this->json('');
 	}
 	public function delFacility(){
-		db('zlss')->where('id=?',array($_GET['id']))->delete();
+		db('facility')->where('id=?',array($_GET['id']))->delete();
 		$this->json('');
 	}
 	//历史数据
@@ -111,36 +111,15 @@ class indexController extends grace{
 		if(isset($_GET['companyname']) && $_GET['companyname']){
 			$query .= " and companyname like '%".$_GET['companyname']."%'";
 		}
-		if(isset($_GET['status']) && $_GET['status']>0){
-			$query .= " and status=?";
-			$queryarr[] = $_GET['status'];
+		if(isset($_GET['wstatus']) && $_GET['wstatus']>0){
+			$query .= " and wstatus=?";
+			$queryarr[] = $_GET['wstatus'];
 		}
-		$data = db('history201906')->where($query,$queryarr)->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])
+		$t = Date('Ym',time());
+		$data = db('history'.$t)->where($query,$queryarr)->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])
 		->dcxfetchAll();
 		$data['pageNo'] = (int)$_GET['pageNo'];
 		$this->json($data);
-	}
-	public function orgTree(){
-		$companys = db('company')->fetchAll('id,name as title');
-		foreach ($companys as $k1 => $v1) {
-			$equips = db('equip')->where('companyid=?',array($v1['id']))->fetchAll('id,name as title');
-			foreach ($equips as $k2 => $v2) {
-				$machines = db('machine')->where('equipid=?',array($v2['id']))->fetchAll('id,name as title');
-				foreach ($machines as $k3 => $v3) {
-					$machines[$k3]['key'] = 'machine_'.$v3['id'];
-					unset($machines[$k3]['id']);
-				}
-				$equips[$k2]['key'] = 'equip_'.$v2['id'];
-				$equips[$k2]['selectable'] = false;
-				unset($equips[$k2]['id']);
-				$equips[$k2]['children'] = array_values($machines);
-			}
-			$companys[$k1]['key'] = 'company_'.$v1['id'];
-			$companys[$k1]['selectable'] = false;
-			unset($companys[$k1]['id']);
-			$companys[$k1]['children'] = array_values($equips);
-		}
-		$this->json($companys);
 	}
 
 	public function adminlist(){
@@ -200,7 +179,10 @@ class indexController extends grace{
 		foreach ($data['data'] as $key => $value) {
 			$f = $db->where('companyid=? and wgid=?',array($value['companyid'],$value['wgid']))->fetchAll();
 			for ($i=1; $i <=count($f); $i++) {
-				$data['data'][$key]['facility'.$i] = $f[$i-1]['val1'];
+				for ($j=1; $j <=9; $j++) {
+					$data['data'][$key]['facility'.$i.'val'.$j] = $f[$i-1]['val'.$j];
+				}
+				$data['data'][$key]['facility'.$i.'t'] = $f[$i-1]['updateTime'];
 			}
 		}
 		$data['pageNo'] = (int)$_GET['pageNo'];
@@ -306,33 +288,87 @@ class indexController extends grace{
 		foreach ($data as $v) {
 			$addData = array(
 				'companyname'=>$v['cname'],
-				'scssname'=>$v['name'],
-				'scsssn'=>$v['sn'],
+				'name'=>$v['name'],
+				'sn'=>$v['sn'],
 				'status'=>$v['status'],
-				'wgsn'=>$v['wsn'],
-				'wgname'=>$v['wname'],
+				'wstatus'=>$v['wstatus'],
+				'wsn'=>$v['wsn'],
+				'wname'=>$v['wname'],
 				'logtime'=>$v['updateTime'],
-				'scssval'=>$v['val'],
-				'zlss1'=>$v['zlss1'],
-				'zlss1t'=>$v['zlss1t'],
-				'zlss2'=>$v['zlss2'],
-				'zlss2t'=>$v['zlss2t'],
-				'zlss3'=>$v['zlss3'],
-				'zlss3t'=>$v['zlss3t'],
-				'zlss4'=>$v['zlss4'],
-				'zlss4t'=>$v['zlss4t'],
-				'zlss5'=>'',
-				'zlss5t'=>'',
-				'zlss6'=>'',
-				'zlss6t'=>'',
-				'zlss7'=>'',
-				'zlss7t'=>'',
-				'bj'=>0,
+				'val1'=>$v['val1'],
+				'val2'=>$v['val2'],
+				'val3'=>$v['val3'],
+				'val4'=>$v['val4'],
+				'val5'=>$v['val5'],
+				'val6'=>$v['val6'],
+				'val7'=>$v['val7'],
+				'val8'=>$v['val8'],
+				'val9'=>$v['val9'],
+				'facility1val1'=>$v['facility1val1'],
+				'facility1val2'=>$v['facility1val2'],
+				'facility1val3'=>$v['facility1val3'],
+				'facility1val4'=>$v['facility1val4'],
+				'facility1val5'=>$v['facility1val5'],
+				'facility1val6'=>$v['facility1val6'],
+				'facility1val7'=>$v['facility1val7'],
+				'facility1val8'=>$v['facility1val8'],
+				'facility1val9'=>$v['facility1val9'],
+				'facility1t'=>$v['facility1t'],
+				'facility2val1'=>$v['facility2val1'],
+				'facility2val2'=>$v['facility2val2'],
+				'facility2val3'=>$v['facility2val3'],
+				'facility2val4'=>$v['facility2val4'],
+				'facility2val5'=>$v['facility2val5'],
+				'facility2val6'=>$v['facility2val6'],
+				'facility2val7'=>$v['facility2val7'],
+				'facility2val8'=>$v['facility2val8'],
+				'facility2val9'=>$v['facility2val9'],
+				'facility2t'=>$v['facility2t'],
+				'facility3val1'=>$v['facility3val1'],
+				'facility3val2'=>$v['facility3val2'],
+				'facility3val3'=>$v['facility3val3'],
+				'facility3val4'=>$v['facility3val4'],
+				'facility3val5'=>$v['facility3val5'],
+				'facility3val6'=>$v['facility3val6'],
+				'facility3val7'=>$v['facility3val7'],
+				'facility3val8'=>$v['facility3val8'],
+				'facility3val9'=>$v['facility3val9'],
+				'facility3t'=>$v['facility3t'],
+				'facility4val1'=>$v['facility4val1'],
+				'facility4val2'=>$v['facility4val2'],
+				'facility4val3'=>$v['facility4val3'],
+				'facility4val4'=>$v['facility4val4'],
+				'facility4val5'=>$v['facility4val5'],
+				'facility4val6'=>$v['facility4val6'],
+				'facility4val7'=>$v['facility4val7'],
+				'facility4val8'=>$v['facility4val8'],
+				'facility4val9'=>$v['facility4val9'],
+				'facility4t'=>$v['facility4t'],
+				'facility5val1'=>$v['facility5val1'],
+				'facility5val2'=>$v['facility5val2'],
+				'facility5val3'=>$v['facility5val3'],
+				'facility5val4'=>$v['facility5val4'],
+				'facility5val5'=>$v['facility5val5'],
+				'facility5val6'=>$v['facility5val6'],
+				'facility5val7'=>$v['facility5val7'],
+				'facility5val8'=>$v['facility5val8'],
+				'facility5val9'=>$v['facility5val9'],
+				'facility5t'=>$v['facility5t'],
+				'facility6val1'=>$v['facility6val1'],
+				'facility6val2'=>$v['facility6val2'],
+				'facility6val3'=>$v['facility6val3'],
+				'facility6val4'=>$v['facility6val4'],
+				'facility6val5'=>$v['facility6val5'],
+				'facility6val6'=>$v['facility6val6'],
+				'facility6val7'=>$v['facility6val7'],
+				'facility6val8'=>$v['facility6val8'],
+				'facility6val9'=>$v['facility6val9'],
+				'facility6t'=>$v['facility6t'],
 				'remark'=>$v['remark']
 			);
 			$db->add($addData);
 		}
-		$this->json('');
+		$this->json($t);
 	}
 	/**
 	 * 时均值

@@ -17,6 +17,7 @@ return array(
 		'type'          => 'redis',
 		'host'          => '127.0.0.1', //主机地址
 		'port'          => '6379',     //端口
-		'pre'           => 'grace_'    //缓存变量前缀
+		'pre'           => 'grace_',    //缓存变量前缀
+		'auth'			=> '123456'	
 	)
 );

@@ -11,6 +11,7 @@ class redisCacher{
 	private function __construct($conf){
 		$this->rdCacher = new \redis();
 		$res = $this->rdCacher->connect($conf['host'], $conf['port']);
+		$this->rdCacher->auth($conf['auth']);
 		$this->pre = $conf['pre'];
 	}
 	

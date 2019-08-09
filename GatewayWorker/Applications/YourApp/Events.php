@@ -55,56 +55,43 @@ class Events
     * @param int $client_id 连接id
     * @param mixed $message 具体消息
     */
-   public static function onMessage($client_id, $message)
-   {
-        // $data1 = "##0087QN=20190708113403000;ST=80;CN=1013;PW=123456;MN=0010931004HBYDTEST000002;Flag=5;CP=&&&&EF41";
-        $data1 = "##0716QN=20190708113607000;ST=80;CN=2011;PW=123456;MN=0010931004HBYDTEST000002;Flag=5;CP=&&DataTime=20190708113607;ea30010101-Rtd=0.99,ea30010101-Flag=N;ea30010102-Rtd=0.00,ea30010102-Flag=N;ea30010103-Rtd=0.00,ea30010103-Flag=N;ea30010104-Rtd=0.99,ea30010104-Flag=N;ea30010105-Rtd=220,ea30010105-Flag=N;ea30010106-Rtd=0,ea30010106-Flag=N;ea30010107-Rtd=6.01,ea30010107-Flag=N;ea30010108-Rtd=3.94,ea30010108-Flag=N;ea30010109-Rtd=0.999,ea30010109-Flag=N;ea30010110-Rtd=220.0,ea30010110-Flag=N;ea30010111-Rtd=220.0,ea30010111-Flag=N;ea30010112-Rtd=219.9,ea30010112-Flag=N;ea30010113-Rtd=220.0,ea30010113-Flag=N;ea30010114-Rtd=0.0,ea30010114-Flag=N;ea30010115-Rtd=0.0,ea30010115-Flag=N;ea30010116-Rtd=0.0,ea30010116-Flag=N&&AA01";
-        //$data1 = "##0670QN=20190708113607000;ST=80;CN=2011;PW=123456;MN=0010931004HBYDTEST000002;Flag=5;CP=&&DataTime=20190708113607;ea30010201-Rtd=0,ea30010201-Flag=J;ea30010202-Rtd=0,ea30010202-Flag=J;ea30010203-Rtd=0,ea30010203-Flag=J;ea30010204-Rtd=0,ea30010204-Flag=J;ea30010205-Rtd=0,ea30010205-Flag=J;ea30010206-Rtd=0,ea30010206-Flag=J;ea30010207-Rtd=0,ea30010207-Flag=J;ea30010208-Rtd=0,ea30010208-Flag=J;ea30010209-Rtd=0,ea30010209-Flag=J;ea30010210-Rtd=0,ea30010210-Flag=J;ea30010211-Rtd=0,ea30010211-Flag=J;ea30010212-Rtd=0,ea30010212-Flag=J;ea30010213-Rtd=0,ea30010213-Flag=J;ea30010214-Rtd=0,ea30010214-Flag=J;ea30010215-Rtd=0,ea30010215-Flag=J;ea30010216-Rtd=0,ea30010216-Flag=J&&B981";       
-        // $r = file_put_contents('tcpt.text',$message,FILE_APPEND);
-        // $r = self::decodePushMsg($data1);
-        $data2 = explode(';',$data1);
-        $data3 = explode('=',$data2[2]);//判断是否是2011(上传实时数据)   1013(现场机时间校准请求)无效
-        if($data3[1] == 2011){
-            $data4 = explode('&&',$data1)[1];
-            $data5 = explode(';',$data4);
-            $data6 = [];
-            //时间
-            $DateTime = explode('=',$data5[0])[1];
-            // print_r($DateTime);echo "<br />";
-            $year = substr($DateTime , 0 , 4);
-            // print_r($year);echo "<br />";
-            $month = substr($DateTime , 4 , 2);
-            // print_r($month);echo "<br />";
-            $day = substr($DateTime , 6 , 2);
-            // print_r($day);echo "<br />";
-            $h = substr($DateTime , 8 , 2);
-            // print_r($h);echo "<br />";
-            $m = substr($DateTime , 10 , 2);
-            // print_r($m);echo "<br />";
-            $s = substr($DateTime , 12 , 2);
-            // print_r($s);echo "<br />";
-            $update = $year.'-'.$month.'-'.$day.' '.$h.':'.$m.':'.$s;
-            // print_r($update);
-            for ($i=1; $i < count($data5); $i++) { 
-                $data5_1 = explode(',', $data5[$i]);
-                $Rtd = explode('=', $data5_1[0]);
-                $Flag = explode('=', $data5_1[1]);
-                $data6[$i-1]['no'] = substr($Rtd[0] , 6 , 2); //zlss编号
-                $data6[$i-1]['yz'] = substr($Rtd[0] , 8 , 2); //01-A相电流 02-B相电流 03-C相电流 04-单相电流 05-总有功功率 06-总无功功率 07-总有功电量 08-总无功电量 09-功率因数
-                $data6[$i-1]['Rtd'] = $Rtd[1];                //zlss val
-                $data6[$i-1]['Flag'] = $Flag[1];              //N-合格 J-无效
+   public static function onMessage($client_id, $message){
+        //$data1 = "
+        ##0716QN=20190708113607000;ST=80;CN=2011;PW=123456;MN=0010931004HBYDTEST000002;Flag=5;CP=&&DataTime=20190708113607;ea30010101-Rtd=0.99,ea30010101-Flag=N;ea30010102-Rtd=0.00,ea30010102-Flag=N;ea30010103-Rtd=0.00,ea30010103-Flag=N;ea30010104-Rtd=0.99,ea30010104-Flag=N;ea30010105-Rtd=220,ea30010105-Flag=N;ea30010106-Rtd=0,ea30010106-Flag=N;ea30010107-Rtd=6.01,ea30010107-Flag=N;ea30010108-Rtd=3.94,ea30010108-Flag=N;ea30010109-Rtd=0.999,ea30010109-Flag=N;ea30010110-Rtd=220.0,ea30010110-Flag=N;ea30010111-Rtd=220.0,ea30010111-Flag=N;ea30010112-Rtd=219.9,ea30010112-Flag=N;ea30010113-Rtd=220.0,ea30010113-Flag=N;ea30010114-Rtd=0.0,ea30010114-Flag=N;ea30010115-Rtd=0.0,ea30010115-Flag=N;ea30010116-Rtd=0.0,ea30010116-Flag=N&&AA01
+        //";
+        $r = self::decodePushMsg($message);
+        if($r != 'error'){
+            Gateway::sendToClient($client_id,$r);
+            $data = json_decode($r,true);
+            $updata = array(
+                'val1'          =>  $data['val'][0]['Rtd'],
+                'val2'          =>  $data['val'][1]['Rtd'],
+                'val3'          =>  $data['val'][2]['Rtd'],
+                'val4'          =>  $data['val'][3]['Rtd'],
+                'val5'          =>  $data['val'][4]['Rtd'],
+                'val6'          =>  $data['val'][5]['Rtd'],
+                'val7'          =>  $data['val'][6]['Rtd'],
+                'val8'          =>  $data['val'][7]['Rtd'],
+                'val9'          =>  $data['val'][8]['Rtd'],
+                // 'updateTime'    =>  $data['update']
+            );
+            $beltlineinfo = self::$db->select('mn,name')->from('beltline')->where("mn='".$data['mn']."'")->row();
+            if(empty($beltlineinfo)){
+                $facilityinfo = self::$db->select('mn,no')->from('facility')->where("mn='".$data['mn']."'")->row();
+                if(empty($facilityinfo)){
+                    print_r('no');
+                }else{
+                    self::$db->update('facility')->cols($updata)->where("mn='".$data['mn']."'")->query();
+                }
+            }else{
+                self::$db->update('beltline')->cols($updata)->where("mn='".$data['mn']."'")->query();
             }
-            // return $data6;
-            $r = "1";
+            return;
         }else{
-            $r = "0";
-        }
-        Gateway::sendToAll(json_encode($_SERVER)."$r");
-        //self::$db->update('Persons')->cols(array('sex'=>'F'))->where('ID=1')->query();
-    //    $data = self::$db->select('name')->from('hy')->where('id = :id')->bindValues(array('id' => 1))->query();
-    //    return Gateway::sendToAll(var_export($data, true));
+            Gateway::sendToClient($client_id,"data errors");
+            return;
+        };
    }
-   
    /**
     * 当用户断开连接时触发
     * @param int $client_id 连接id
@@ -115,8 +102,10 @@ class Events
        GateWay::sendToAll("$client_id logout\r\n");
    }
     public static function decodePushMsg($data1){
+        $data = [];
         $data2 = explode(';',$data1);
         $data3 = explode('=',$data2[2]);//判断是否是2011(上传实时数据)   1013(现场机时间校准请求)无效
+        $data['mn'] = explode('=',$data2[4])[1];
         if($data3[1] == 2011){
             $data4 = explode('&&',$data1)[1];
             $data5 = explode(';',$data4);
@@ -142,14 +131,16 @@ class Events
                 $data5_1 = explode(',', $data5[$i]);
                 $Rtd = explode('=', $data5_1[0]);
                 $Flag = explode('=', $data5_1[1]);
-                $data6[$i-1]['no'] = substr($Rtd[0] , 6 , 2); //zlss编号
+                $data6[$i-1]['no'] = substr($Rtd[0] , 6 , 2); //facility编号
                 $data6[$i-1]['yz'] = substr($Rtd[0] , 8 , 2); //01-A相电流 02-B相电流 03-C相电流 04-单相电流 05-总有功功率 06-总无功功率 07-总有功电量 08-总无功电量 09-功率因数
-                $data6[$i-1]['Rtd'] = $Rtd[1];                //zlss val
+                $data6[$i-1]['Rtd'] = $Rtd[1];                //facility val
                 $data6[$i-1]['Flag'] = $Flag[1];              //N-合格 J-无效
             }
-            return $data6;
+            $data['update'] = $update;
+            $data['val'] = $data6;
+            return json_encode($data);
         }else{
-            return false;
+            return "error";
         }
     }
 }

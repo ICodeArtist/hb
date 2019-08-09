@@ -13,17 +13,27 @@ class receiveController extends grace{
         $this->json($r);
     }
     public function testRedis(){
-        // $this->removeCache('test', '12');
-        $this->cache('test', 12, '__getData');
+        $this->cache('test', 12, 'dds');
         p($this->test);
     }
     public function __getData(){
         echo '无缓存，进行查询...<br />';
-        // return 'dd';
+        return 'dds';
     }
-    public function ttt(){
-        echo urlencode("佐");
-        // return 'dd';
+    public function goredis(){
+        $redis = new Redis();
+        $redis->connect('127.0.0.1', 6379);
+        $redis->auth('123456');
+        $list = $redis->lpush("tutorial-list", "Redis");
+        echo $list.'-';
+        $hash1 = $redis->hSet('user', 'name', '2231');
+        echo $hash1.'-';
+    }
+    public function predis(){
+        $redis = new Redis();
+        $redis->connect('127.0.0.1', 6379);
+        $redis->auth('123456');
+        echo $redis->rPop('tutorial-list');
     }
     public function decodePushMsg(){
         // $data1 = "##0087QN=20190708113403000;ST=80;CN=1013;PW=123456;MN=0010931004HBYDTEST000002;Flag=5;CP=&&&&EF41";
@@ -35,7 +45,7 @@ class receiveController extends grace{
             $data4 = explode('&&',$data1)[1];
             $data5 = explode(';',$data4);
             $data6 = [];
-            //时间
+            //时间5
             $DateTime = explode('=',$data5[0])[1];
             // print_r($DateTime);echo "<br />";
             $year = substr($DateTime , 0 , 4);
