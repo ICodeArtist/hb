@@ -28,7 +28,7 @@ class indexController extends grace{
 			$queryarr[] = $_GET['hyid'];
 		}
 		$data = $db->where($query,$queryarr)
-		->join('as c left join area as a on c.areaid=a.id left join hy as h on c.hyid=h.id')->order('id asc')
+		->join('as c left join area as a on c.areaid=a.id left join hy as h on c.hyid=h.id')->order('c.id asc')
 		->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])->dcxfetchAll('c.*,a.name as area,h.name as hyname');
 		$data['pageNo'] = (int)$_GET['pageNo'];
 		$this->json($data);
@@ -67,7 +67,6 @@ class indexController extends grace{
 		}
 		$this->json($data);
 	}
-
 	public function addCompany(){
 		if($_SERVER['REQUEST_METHOD'] == 'OPTIONS'){
 

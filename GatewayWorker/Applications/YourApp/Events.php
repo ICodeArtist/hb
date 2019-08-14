@@ -63,6 +63,7 @@ class Events
         if($r != 'error'){
             Gateway::sendToClient($client_id,$r);
             $data = json_decode($r,true);
+            $no = $data['val'][0]['no'];
             $updata = array(
                 'val1'          =>  $data['val'][0]['Rtd'],
                 'val2'          =>  $data['val'][1]['Rtd'],
@@ -75,16 +76,16 @@ class Events
                 'val9'          =>  $data['val'][8]['Rtd'],
                 // 'updateTime'    =>  $data['update']
             );
-            $beltlineinfo = self::$db->select('mn,name')->from('beltline')->where("mn='".$data['mn']."'")->row();
+            $beltlineinfo = self::$db->select('mn,name')->from('beltline')->where("mn='".$data['mn']."' and no='".$no."'")->row();
             if(empty($beltlineinfo)){
-                $facilityinfo = self::$db->select('mn,no')->from('facility')->where("mn='".$data['mn']."'")->row();
+                $facilityinfo = self::$db->select('mn,no')->from('facility')->where("mn='".$data['mn']."' and no='".$no."'")->row();
                 if(empty($facilityinfo)){
-                    print_r('no');
+                    print_r($data);
                 }else{
-                    self::$db->update('facility')->cols($updata)->where("mn='".$data['mn']."'")->query();
+                    self::$db->update('facility')->cols($updata)->where("mn='".$data['mn']."' and no='".$no."'")->query();
                 }
             }else{
-                self::$db->update('beltline')->cols($updata)->where("mn='".$data['mn']."'")->query();
+                self::$db->update('beltline')->cols($updata)->where("mn='".$data['mn']."' and no='".$no."'")->query();
             }
             return;
         }else{
