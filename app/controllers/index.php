@@ -407,4 +407,18 @@ class indexController extends grace{
 		}
 		$this->json($data);
 	}
+	//企业地址列表
+	public function areacompany(){
+		$data = db('area')->where('1=?',[1])->fetchAll();
+		foreach ($data as $key => $value) {
+			$cp = db('company')->where('areaid=?',[$value['id']])->fetchAll();
+			// if(empty($cp)){
+			// 	unset($data[$key]);
+			// }else{
+				$data[$key]['company'] = $cp;
+			// }
+		}
+		$data = array_values($data);
+		$this->json($data);
+	}
 }
