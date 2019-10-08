@@ -120,7 +120,25 @@ class indexController extends grace{
 		$data['pageNo'] = (int)$_GET['pageNo'];
 		$this->json($data);
 	}
-
+	//报表
+	public function redata(){
+		if(isset($_GET['companyname']) && $_GET['companyname']){
+			$query = '1=?';
+			$queryarr[] = '1';
+			$query .= " and companyname like '%".$_GET['companyname']."%'";
+			$t = Date('Ym',time());
+			$data = db('history'.$t)->where($query,$queryarr)->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])
+			->dcxfetchAll();
+			$data['pageNo'] = (int)$_GET['pageNo'];
+		}else{
+			$query ='1=?';
+			$queryarr[] = '0';
+			$data = db('history'.$t)->where($query,$queryarr)->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])
+			->dcxfetchAll();
+			$data['pageNo'] = (int)$_GET['pageNo'];
+		}
+		$this->json($data);
+	}
 	public function adminlist(){
 		$data = db('admin')->where('deleted=?',array(0))->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])->dcxfetchAll();
 		$data['pageNo'] = (int)$_GET['pageNo'];
