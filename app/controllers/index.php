@@ -50,7 +50,24 @@ class indexController extends grace{
 	}
 	//网关
 	public function wgs(){
-		$data = db('wg')->fetchAll();
+		$q = '1=?';
+		$qarr[] = 1;
+		if(isset($_GET['companyid']) && $_GET['companyid']>0){
+			$q .= ' and companyid=?';
+			$qarr[] = $_GET['companyid'];
+		}
+		$data = db('wg')->where($q,$qarr)->fetchAll();
+		$this->json($data);
+	}
+	//生产线选择
+	public function bels(){
+		$q = '1=?';
+		$qarr[] = 1;
+		if(isset($_GET['companyid']) && $_GET['companyid']>0){
+			$q .= ' and companyid=?';
+			$qarr[] = $_GET['companyid'];
+		}
+		$data = db('beltline')->where($q,$qarr)->fetchAll();
 		$this->json($data);
 	}
 	//公司网关二级联动
@@ -125,6 +142,10 @@ class indexController extends grace{
 		if(isset($_GET['companyname']) && $_GET['companyname']){
 			$query = '1=?';
 			$queryarr[] = '1';
+			if(isset($_GET['sn']) && $_GET['sn']){
+				$query .= ' and sn=?';
+				$queryarr[] = $_GET['sn'];
+			}
 			$query .= " and companyname like '%".$_GET['companyname']."%'";
 			$t = Date('Ym',time());
 			$data = db('history'.$t)->where($query,$queryarr)->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])
@@ -137,7 +158,7 @@ class indexController extends grace{
 			->dcxfetchAll();
 			$data['pageNo'] = (int)$_GET['pageNo'];
 		}
-		$this->json($data);
+		$this->json($data,'0',strtotime(str_replace('"','',$_GET['createtime'][0])));
 	}
 	public function adminlist(){
 		$data = db('admin')->where('deleted=?',array(0))->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])->dcxfetchAll();
@@ -427,6 +448,9 @@ class indexController extends grace{
 	}
 	//企业地址列表
 	public function areacompany(){
+		if(isset($_GET['companyname']) && $_GET['companyname']){
+
+		}
 		$data = db('area')->where('1=?',[1])->fetchAll();
 		foreach ($data as $key => $value) {
 			$cp = db('company')->where('areaid=?',[$value['id']])->fetchAll();
@@ -437,6 +461,24 @@ class indexController extends grace{
 			// }
 		}
 		$data = array_values($data);
+		$this->json($data);
+	}
+	//workplace
+	public function workplace(){
+		$companynum = db('company')->where('1=?',[1])->count();
+		$companyonlienum = db('company')->where('status=?',[1])->count();
+		$beltlinenum = db('beltline')->where('1=?',[1])->count();
+		$beltlineonlienum = db('beltline')->where('status=?',[1])->count();
+		$data['companynum'] = $companynum;
+		$data['beltlinenum'] = $beltlinenum;
+		$data['companyonlienum'] = $companyonlienum;
+		$data['beltlineonlienum'] = $beltlineonlienum;
+		$data['sourceData'] = [];
+		$area = db('area')->where('1=?',[1])->fetchAll();
+		foreach ($area as $key => $value) {
+			$data['sourceData'][$key]['item'] = $value['name'];
+			$data['sourceData'][$key]['count'] = (int)db('company')->where('areaid=?',[$value['id']])->count();
+		}
 		$this->json($data);
 	}
 }
