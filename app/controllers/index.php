@@ -147,18 +147,62 @@ class indexController extends grace{
 				$queryarr[] = $_GET['sn'];
 			}
 			$query .= " and companyname like '%".$_GET['companyname']."%'";
-			$t = Date('Ym',time());
-			$data = db('history'.$t)->where($query,$queryarr)->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])
-			->dcxfetchAll();
-			$data['pageNo'] = (int)$_GET['pageNo'];
+			if(isset($_GET['createtime']) && $_GET['createtime'][0]){
+				$btstrt = strtotime(str_replace('"','',$_GET['createtime'][0]));
+				$etstrt = strtotime(str_replace('"','',$_GET['createtime'][1]));
+				$bt = Date('Ym',$btstrt);
+				$et = Date('Ym',$etstrt);
+				if($bt == $et){//选择时间为同一个月
+					$t = $bt;
+					$query .= " and create_time>=? and create_time<=? ";
+					$queryarr[] = Date('Y-m-d H:i:s',$btstrt);
+					$queryarr[] = Date('Y-m-d H:i:s',$etstrt);
+					$data = db('history'.$t)->where($query,$queryarr)->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])
+					->dcxfetchAll();
+				}else{//不同月
+					//清空history表
+					db('history')->where('1=?',[1])->delete();
+					//把范围内的数据存入history中，再做分页取出
+					$bt_e = date("Y-m-t", $btstrt).' 23:59:59';//开始时间的月末
+					$et_b = date("Y-m-01", $etstrt).' 00:00:00';//结束时间的月初
+					//取出
+					$btq = $etq = $query;
+					$btqarr = $etqarr = $queryarr;
+
+					$btq .= " and create_time>=? and create_time<=? ";
+					$btqarr[] = Date('Y-m-d H:i:s',$btstrt);//起始时间
+					$btqarr[] = $bt_e;//月末
+					
+					$etq .= " and create_time>=? and create_time<=? ";
+					$etqarr[] = $et_b;//月初
+					$etqarr[] = Date('Y-m-d H:i:s',$etstrt);//结束时间
+					
+					$btdata = db('history'.$bt)->where($btq,$btqarr)->fetchAll();
+					foreach ($btdata as $key => $value) {
+						unset($btdata[$key]['id']);
+						db('history')->add($btdata[$key]);
+					}
+					$etdata = db('history'.$et)->where($etq,$etqarr)->fetchAll();
+					foreach ($etdata as $key => $value) {
+						unset($etdata[$key]['id']);
+						db('history')->add($etdata[$key]);
+					}
+					$data = db('history')->where($query,$queryarr)->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])
+					->dcxfetchAll();
+				}
+			}else{
+				$t = Date('Ym',time());
+				$data = db('history'.$t)->where($query,$queryarr)->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])
+				->dcxfetchAll();
+			}
 		}else{
 			$query ='1=?';
 			$queryarr[] = '0';
 			$data = db('history'.$t)->where($query,$queryarr)->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])
 			->dcxfetchAll();
-			$data['pageNo'] = (int)$_GET['pageNo'];
 		}
-		$this->json($data,'0',strtotime(str_replace('"','',$_GET['createtime'][0])));
+		$data['pageNo'] = (int)$_GET['pageNo'];
+		$this->json($data,'0',$bt_e.' and '.$et_b);
 	}
 	public function adminlist(){
 		$data = db('admin')->where('deleted=?',array(0))->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])->dcxfetchAll();
