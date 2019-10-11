@@ -202,7 +202,76 @@ class indexController extends grace{
 			->dcxfetchAll();
 		}
 		$data['pageNo'] = (int)$_GET['pageNo'];
-		$this->json($data,'0',$bt_e.' and '.$et_b);
+		$this->json($data);
+	}
+	//导出
+	public function exportdata(){
+		$excel = tool('PHPExcel');
+		//基础信息
+        $excel->getProperties()->setCreator("phpGrace")
+                             ->setLastModifiedBy("phpGrace")
+                             ->setTitle("phpGrace demo")
+                             ->setSubject("objPHPExcel");
+           //设置 sheet 名称
+           $excel->getActiveSheet(0)->setTitle('报表');
+        //标题
+        $excel->setActiveSheetIndex(0)
+                    ->setCellValue('A1', '企业名称')
+                    ->setCellValue('B1', '生产线名称')
+                    ->setCellValue('C1', '生产线编号')
+					->setCellValue('D1', '组别')
+                    ->setCellValue('E1', '时间')
+					->setCellValue('F1', '生产设施')
+					->setCellValue('G1', '治理设施1')
+					->setCellValue('H1', '治理设施2')
+                    ->setCellValue('I1', '治理设施3')
+                    ->setCellValue('J1', '治理设施4');
+		//数据填充【此数据可以来自数据库】
+		$query = '1=?';
+		$queryarr[] = '1';
+		if(isset($_GET['sn']) && $_GET['sn']){
+			$query .= ' and sn=?';
+			$queryarr[] = $_GET['sn'];
+		}
+		$query .= " and companyname like '%".$_GET['companyname']."%'";
+		if(isset($_GET['createtime']) && $_GET['createtime'][0]){
+			$btstrt = strtotime(str_replace('"','',$_GET['createtime'][0]));
+			$etstrt = strtotime(str_replace('"','',$_GET['createtime'][1]));
+			$bt = Date('Ym',$btstrt);
+			$et = Date('Ym',$etstrt);
+			if($bt == $et){//选择时间为同一个月
+				$t = $bt;
+				$query .= " and create_time>=? and create_time<=? ";
+				$queryarr[] = Date('Y-m-d H:i:s',$btstrt);
+				$queryarr[] = Date('Y-m-d H:i:s',$etstrt);
+				$data = db('history'.$t)->where($query,$queryarr)->fetchAll();
+			}else{//不同月
+				$data = db('history')->where($query,$queryarr)->fetchAll();
+			}
+		}else{
+			$t = Date('Ym',time());
+			$data = db('history'.$t)->where($query,$queryarr)->fetchAll();
+		}
+        $i = 2;
+        foreach($data as $rows){
+            $excel->setActiveSheetIndex(0)
+                    ->setCellValue('A'.$i, $rows['companyname'])
+                    ->setCellValue('B'.$i, $rows['name'])
+					->setCellValue('C'.$i, $rows['sn'])
+					->setCellValue('D'.$i, $rows['name'])
+					->setCellValue('E'.$i, $rows['create_time'])
+					->setCellValue('F'.$i, $rows['val1'])
+                    ->setCellValue('G'.$i, $rows['facility1val1'])
+					->setCellValue('H'.$i, $rows['facility2val1'])
+					->setCellValue('I'.$i, $rows['facility3val1'])
+					->setCellValue('J'.$i, $rows['facility4val1']);
+            $i++;
+        }
+		//保存为 xls
+		$objWriter =PHPExcel_IOFactory:: createWriter($excel, 'Excel2007');
+		$filename = 't.xls';
+		$objWriter->save($filename);
+		$this->json('http://125.124.87.82:8889/'.$filename);
 	}
 	public function adminlist(){
 		$data = db('admin')->where('deleted=?',array(0))->limit(($_GET['pageNo']-1)*$_GET['pageSize'],$_GET['pageSize'])->dcxfetchAll();
