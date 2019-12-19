@@ -59,6 +59,7 @@ class Events
         //$data1 = "
         ##0716QN=20190708113607000;ST=80;CN=2011;PW=123456;MN=0010931004HBYDTEST000002;Flag=5;CP=&&DataTime=20190708113607;ea30010101-Rtd=0.99,ea30010101-Flag=N;ea30010102-Rtd=0.00,ea30010102-Flag=N;ea30010103-Rtd=0.00,ea30010103-Flag=N;ea30010104-Rtd=0.99,ea30010104-Flag=N;ea30010105-Rtd=220,ea30010105-Flag=N;ea30010106-Rtd=0,ea30010106-Flag=N;ea30010107-Rtd=6.01,ea30010107-Flag=N;ea30010108-Rtd=3.94,ea30010108-Flag=N;ea30010109-Rtd=0.999,ea30010109-Flag=N;ea30010110-Rtd=220.0,ea30010110-Flag=N;ea30010111-Rtd=220.0,ea30010111-Flag=N;ea30010112-Rtd=219.9,ea30010112-Flag=N;ea30010113-Rtd=220.0,ea30010113-Flag=N;ea30010114-Rtd=0.0,ea30010114-Flag=N;ea30010115-Rtd=0.0,ea30010115-Flag=N;ea30010116-Rtd=0.0,ea30010116-Flag=N&&AA01
         //";
+        // file_put_contents("tcpt.txt",$message,FILE_APPEND);
         $r = self::decodePushMsg($message);
         if($r != 'error'){
             Gateway::sendToClient($client_id,$r);
