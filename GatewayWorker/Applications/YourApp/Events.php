@@ -47,7 +47,7 @@ class Events
         // 向所有人发送
         Gateway::sendToAll("$client_id login IP:".$_SERVER['REMOTE_ADDR']."\r\n");
 
-        self::$db =new \Workerman\MySQL\Connection('localhost', '3306', 'hbsql', 'n7yJkdCaz3ssFS87', 'hbsql');
+        self::$db =new \Workerman\MySQL\Connection('localhost', '3306', 'root', 'EaHMAbLhrjkhzdJa', 'hbsql');
     }
     
    /**
