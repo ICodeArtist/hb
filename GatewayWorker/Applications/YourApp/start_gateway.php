@@ -47,10 +47,10 @@ $gateway->onConnect = function($connection)
     {
         // 可以在这里判断连接来源是否合法，不合法就关掉连接
         // $_SERVER['HTTP_ORIGIN']标识来自哪个站点的页面发起的websocket链接
-        if($_SERVER['HTTP_ORIGIN'] != 'http://kedou.workerman.net')
-        {
-            $connection->close();
-        }
+        // if($_SERVER['HTTP_ORIGIN'] != 'http://kedou.workerman.net')
+        // {
+        //     $connection->close();
+        // }
         // onWebSocketConnect 里面$_GET $_SERVER是可用的
         var_dump($_GET, $_SERVER);
     };
